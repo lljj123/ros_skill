@@ -50,14 +50,22 @@ The ROS wiki may present anti-bot JavaScript challenges in automated fetch conte
 If blocked:
 
 1. keep `docs.ros.org` + `index.ros.org` as reliable machine-readable sources
-2. open ROS wiki pages with interactive browser automation:
-   - `browser.open`
-   - `browser.snapshot`
+2. use whatever browsing or browser-automation tools the host runtime actually exposes
+3. if no browsing tools are available, rely on machine-readable docs and be explicit about the gap
 
 Do not conclude "docs unavailable" before attempting browser-based access.
+
+## Safety note for command examples
+
+Official docs may show setup commands such as package installation, `sudo`, or machine initialization.
+
+- Ask for confirmation before running those commands in a user environment.
+- Treat `sudo rosdep init` as a one-time machine setup step, not a routine workspace command.
+- Treat robot-motion examples as simulation-first unless the user clearly approved real hardware motion.
 
 ## Practical interpretation for OpenClaw + ROS1
 
 - Use docs.ros.org API pages for interface-level correctness.
 - Use index.ros.org pages for package status / maintenance / dependencies.
 - Use wiki pages for procedural tutorials, architecture notes, and operational caveats.
+- For rosbridge/OpenClaw usage, prefer interface docs plus your own deployment contract over generic tutorial assumptions.

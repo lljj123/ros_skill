@@ -54,19 +54,20 @@ source devel/setup.zsh
 ### rosdep workflow
 
 ```zsh
-# one-time init
-sudo rosdep init
+# one-time init, only with user approval
+# sudo rosdep init
 
 # update as normal user (no sudo)
 rosdep update
 
-# install workspace deps
-rosdep install --from-paths src --ignore-src -r -y
+# install workspace deps only after user approval
+# rosdep install --from-paths src --ignore-src -r -y
 ```
 
 Notes:
 
 - ROS wiki explicitly warns: do **not** run `rosdep update` with sudo
+- `rosdep init` is machine-level setup, not a routine per-workspace step
 - prefer apt installation paths for Noetic tooling where available
 
 ## 4) Launch system and orchestration
@@ -217,6 +218,9 @@ Use `rosbridge_suite` when OpenClaw must control ROS1 through websocket.
 
 - protocol supports topic pub/sub, services, params
 - default endpoint commonly `ws://<host>:9090`
+- prefer a narrow approved interface surface instead of exposing the full graph
+- subscribe to telemetry before sending commands
+- prefer a ROS-side adapter node for complex task semantics or action workflows
 
 Start pattern:
 
@@ -225,6 +229,20 @@ source /opt/ros/noetic/setup.zsh
 roslaunch rosbridge_server rosbridge_websocket.launch
 ```
 
+Message templates:
+
+```json
+{"op":"advertise","topic":"/cmd_vel","type":"geometry_msgs/Twist"}
+{"op":"publish","topic":"/cmd_vel","msg":{"linear":{"x":0.2,"y":0.0,"z":0.0},"angular":{"x":0.0,"y":0.0,"z":0.0}}}
+{"op":"subscribe","topic":"/odom","type":"nav_msgs/Odometry","throttle_rate":200}
+{"op":"call_service","service":"/start_task","args":{"mode":"inspect"}}
+```
+
+Action note:
+
+- rosbridge is straightforward for topics/services
+- for actionlib, prefer an existing ROS-side adapter or explicitly manage `goal` / `feedback` / `result` / `status` / `cancel` topics after type checks
+
 ## 12) Safety baseline (mandatory)
 
 - conservative default speed/step values
@@ -232,6 +250,8 @@ roslaunch rosbridge_server rosbridge_websocket.launch
 - stop/neutral command on success and failure paths
 - reject execution when telemetry is stale/missing
 - report measured result (distance/yaw/state), not only intent
+- ask for confirmation before real-hardware motion
+- treat websocket disconnect as a failure that still requires stop-state verification
 
 ## 13) Coverage checklist before claiming “done”
 
@@ -241,4 +261,5 @@ roslaunch rosbridge_server rosbridge_websocket.launch
 - [ ] TF frame chain and timestamps validated
 - [ ] rosbag record/replay path validated
 - [ ] rosbridge path validated when OpenClaw integration is required
+- [ ] approved OpenClaw control surface documented (endpoint + allowed interfaces + stop path)
 - [ ] safety stop + timeout semantics validated
